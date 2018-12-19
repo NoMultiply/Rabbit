@@ -21,7 +21,10 @@ GLint TextureFromFile(const char* path, string directory);
 class Model
 {
 public:
-	Model(const GLchar* path) {
+	Model(const GLchar* path, bool _hasFur=false, int _layers=0, float _maxFurLength=0) {
+		this->hasFur = _hasFur;
+		this->layers = _layers;
+		this->maxFurLength = _maxFurLength;
 		this->loadModel(path);
 	}
 
@@ -34,6 +37,9 @@ private:
 	vector<Mesh> meshes;
 	string directory;
 	vector<Texture> textures_loaded;
+	bool hasFur;
+	int layers;
+	float maxFurLength;
 
 	void loadModel(string path) {
 		Assimp::Importer importer;
@@ -96,7 +102,7 @@ private:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 
-		return Mesh(vertices, indices, textures);
+		return Mesh(vertices, indices, textures, hasFur, layers, maxFurLength);
 	}
 
 	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName) {

@@ -27,6 +27,13 @@ bool firstMouse = true;
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
+GLuint FurTexture::textureId = 0;
+const int FUR_DIM = 512;
+const float FUR_DENSITY = 0.1f;
+const int FUR_LAYERS = 40;
+const float FUR_HEIGHT = 100.0f;
+// const float FUR_HEIGHT = 0.001f;
+
 int main() {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -48,11 +55,17 @@ int main() {
 	
 	glViewport(0, 0, screenWidth, screenHeight);
 
+	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	FurTexture fur(FUR_DIM, FUR_DIM, FUR_LAYERS, FUR_DENSITY);
 
 	Shader shader("Shader/Rabbit.vert", "Shader/Rabbit.frag");
 
-	Model ourModel("Object/bunny/bunny.obj");
+	Model ourModel("Object/bunny/bunny.obj", false, FUR_LAYERS, FUR_HEIGHT);
+	// Model ourModel("Object/desk/wood_desk.obj", false, FUR_LAYERS, FUR_HEIGHT);
 
 	Model lightBulb("Object/lamp/file.obj");
 
@@ -60,6 +73,8 @@ int main() {
 		glm::vec3(2.3f, -1.6f, -3.0f),
 		glm::vec3(-1.7f, 0.9f, 1.0f)
 	};
+
+	glm::vec3 gravity(0.0f, -0.8f, 0.0f);
 
 	while (!glfwWindowShouldClose(window)) {
 		GLfloat currentFrame = (GLfloat)glfwGetTime();
@@ -73,6 +88,10 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		shader.Use();
+
+		glm::vec3 force(sin(glm::radians(currentFrame * 50.0f)) * 50.0f, 0.0f, 0.0f);
+		glm::vec3 disp = gravity + force;
+		glUniform3f(glGetUniformLocation(shader.Program, "displacement"), disp.x, disp.y, disp.z);
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 		glm::mat4 view = camera.GetViewMatrix();
@@ -99,6 +118,7 @@ int main() {
 
 		glm::mat4 model(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+		// model = glm::scale(model, glm::vec3(0.0005f));
 		model = glm::scale(model, glm::vec3(10.0f));
 		glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		ourModel.Draw(shader);

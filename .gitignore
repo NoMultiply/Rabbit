@@ -1,2 +1,8 @@
 x64/
 .vs/
+packages/
+Rabbit.sln
+Rabbit.vcxproj
+Rabbit.vcxproj.filters
+Rabbit.vcxproj.user
+packages.config
