@@ -20,6 +20,8 @@ void main()
 	vec4 newPos = vec4(position + layerDisplacement, 1.0f);
     gl_Position = projection * view * model * newPos;
     fragPosition = vec3(model * newPos);
+    // gl_Position = projection * view * model * vec4(position, 1.0f);
+    // fragPosition = vec3(model * vec4(position, 1.0f));
     Normal = mat3(transpose(inverse(model))) * normal;
     TexCoords = texCoords;
 	fragLayer = layer;

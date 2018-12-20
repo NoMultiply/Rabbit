@@ -88,6 +88,7 @@ public:
 			for (int i = 0; i < layers; ++i) {
 				float layer = (float)i / (float)(layers - 1);
 				float layerFurLength = maxFurLength * layer;
+
 				for (auto v : vertices) {
 					v.Position = v.Position + v.Normal * layerFurLength;
 					v.Layer = layer;

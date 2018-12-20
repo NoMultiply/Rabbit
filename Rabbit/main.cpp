@@ -29,10 +29,10 @@ GLfloat lastFrame = 0.0f;
 
 GLuint FurTexture::textureId = 0;
 const int FUR_DIM = 512;
-const float FUR_DENSITY = 0.1f;
-const int FUR_LAYERS = 40;
-const float FUR_HEIGHT = 100.0f;
-// const float FUR_HEIGHT = 0.001f;
+const float FUR_DENSITY = 0.3f;
+const int FUR_LAYERS = 20;
+// const float FUR_HEIGHT = 100.0f;
+const float FUR_HEIGHT = 0.05f;
 
 int main() {
 	glfwInit();
@@ -62,9 +62,9 @@ int main() {
 
 	FurTexture fur(FUR_DIM, FUR_DIM, FUR_LAYERS, FUR_DENSITY);
 
-	Shader shader("Shader/Rabbit.vert", "Shader/Rabbit.frag");
+	Shader shader("Shader/FurRabbit.vert", "Shader/FurRabbit.frag");
 
-	Model ourModel("Object/bunny/bunny.obj", false, FUR_LAYERS, FUR_HEIGHT);
+	Model ourModel("Object/bunny/bunny.obj", true, FUR_LAYERS, FUR_HEIGHT);
 	// Model ourModel("Object/desk/wood_desk.obj", false, FUR_LAYERS, FUR_HEIGHT);
 
 	Model lightBulb("Object/lamp/file.obj");
@@ -89,8 +89,10 @@ int main() {
 
 		shader.Use();
 
-		glm::vec3 force(sin(glm::radians(currentFrame * 50.0f)) * 50.0f, 0.0f, 0.0f);
-		glm::vec3 disp = gravity + force;
+		// glm::vec3 force(sin(glm::radians(currentFrame * 50.0f)) * 50.0f, 0.0f, 0.0f);
+		glm::vec3 force(sin(glm::radians(currentFrame * 50.0f)) * FUR_HEIGHT / 2, 0.0f, 0.0f);
+		// glm::vec3 disp = gravity + force;
+		glm::vec3 disp = gravity * FUR_HEIGHT + force;
 		glUniform3f(glGetUniformLocation(shader.Program, "displacement"), disp.x, disp.y, disp.z);
 
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
@@ -101,25 +103,31 @@ int main() {
 		glUniform3f(glGetUniformLocation(shader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 		// Point light 1
 		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
-		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].ambient"), 0.05f, 0.05f, 0.05f);
+		// glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].ambient"), 0.05f, 0.05f, 0.05f);
+		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].ambient"), 0.5f, 0.5f, 0.5f);
 		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].diffuse"), 1.0f, 1.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].specular"), 1.0f, 1.0f, 1.0f);
 		glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].constant"), 1.0f);
+		// glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].linear"), 0.009f);
+		// glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].quadratic"), 0.0032f);
 		glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].linear"), 0.009f);
 		glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].quadratic"), 0.0032f);
 		// Point light 2
 		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].position"), pointLightPositions[1].x, pointLightPositions[1].y, pointLightPositions[1].z);
-		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.05f, 0.05f, 0.05f);
+		// glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.05f, 0.05f, 0.05f);
+		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.5f, 0.5f, 0.5f);
 		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].diffuse"), 1.0f, 1.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].specular"), 1.0f, 1.0f, 1.0f);
 		glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].constant"), 1.0f);
+		// glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].linear"), 0.009f);
+		// glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].quadratic"), 0.0032f);
 		glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].linear"), 0.009f);
 		glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].quadratic"), 0.0032f);
 
 		glm::mat4 model(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
 		// model = glm::scale(model, glm::vec3(0.0005f));
-		model = glm::scale(model, glm::vec3(10.0f));
+		// model = glm::scale(model, glm::vec3(10.0f));
 		glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
 		ourModel.Draw(shader);
 
