@@ -6,3 +6,7 @@ Rabbit.vcxproj
 Rabbit.vcxproj.filters
 Rabbit.vcxproj.user
 packages.config
+*.VC.db
+*.VC.VC.opendb
+Debug/
+Release/
