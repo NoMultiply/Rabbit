@@ -1,4 +1,7 @@
 #version 330 core
+
+#define USE_TEXTURE true
+
 struct Material {
     sampler2D texture_diffuse1;
     sampler2D texture_specular1;
@@ -41,7 +44,8 @@ void main()
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
         result += CalcPointLight(pointLights[i], norm, fragPosition, viewDir);
         
-    color = vec4(result, 1.0f);
+    // color = vec4(result, 1.0f);
+	color = vec4(1.0f, 0.47f, 0.0f, 1.0f);
     // color = vec4(1.0f);
 }
 
@@ -59,9 +63,15 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float distance = length(light.position - fragPos);
     float attenuation = 1.0f / (light.constant + light.linear * distance + light.quadratic * (distance * distance));    
     // Combine results
-    vec3 ambient = light.ambient * vec3(texture(material.texture_diffuse1, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.texture_diffuse1, TexCoords));
-    vec3 specular = light.specular * spec * vec3(texture(material.texture_specular1, TexCoords));
+	vec3 ambient = light.ambient;
+	if (USE_TEXTURE) 
+		ambient *= vec3(texture(material.texture_diffuse1, TexCoords));
+    vec3 diffuse = light.diffuse * diff;
+	if (USE_TEXTURE)
+		diffuse *= vec3(texture(material.texture_diffuse1, TexCoords));
+    vec3 specular = light.specular * spec;
+	if (USE_TEXTURE) 
+		specular *= vec3(texture(material.texture_specular1, TexCoords));
     ambient *= attenuation;
     diffuse *= attenuation;
     specular *= attenuation;

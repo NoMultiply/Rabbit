@@ -13,6 +13,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include "Mesh.h"
+#include <unordered_map>
 
 using namespace std;
 
@@ -21,23 +22,32 @@ GLint TextureFromFile(const char* path, string directory);
 class Model
 {
 public:
-	Model(const GLchar* path, bool _hasFur=false, int _layers=0, float _maxFurLength=0) {
+	Model(const GLchar* path, bool _hasFur = false, int _layers = 0,
+		float _maxFurLength = 0, bool _hasFin = false) {
 		this->hasFur = _hasFur;
+		this->hasFin = _hasFin;
 		this->layers = _layers;
 		this->maxFurLength = _maxFurLength;
 		this->loadModel(path);
 	}
 
-	void Draw(Shader shader) {
+	virtual void Draw(Shader shader) {
 		for (GLuint i = 0; i < this->meshes.size(); i++)
 			this->meshes[i].Draw(shader);
 	}
 
-private:
+	void SetFurTexture(bool hasFur) {
+		this->hasFur = hasFur;
+		for (GLuint i = 0; i < this->meshes.size(); i++)
+			this->meshes[i].hasFur = hasFur;
+	}
+
+protected:
 	vector<Mesh> meshes;
 	string directory;
 	vector<Texture> textures_loaded;
 	bool hasFur;
+	bool hasFin;
 	int layers;
 	float maxFurLength;
 
@@ -102,7 +112,7 @@ private:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 
-		return Mesh(vertices, indices, textures, hasFur, layers, maxFurLength);
+		return Mesh(vertices, indices, textures, hasFur, layers, maxFurLength, hasFin);
 	}
 
 	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName) {
@@ -151,3 +161,142 @@ GLint TextureFromFile(const char* path, string directory) {
 	SOIL_free_image_data(image);
 	return textureID;
 }
+
+#define EPISON 1e-6
+
+struct GraftalVertex {
+	glm::vec3 Position;
+	glm::vec3 Normal;
+	glm::vec2 TexCoords;
+	GLfloat furLength;
+	GLfloat alpha;
+
+	bool operator<(const GraftalVertex & t) const {
+		if (Position.x - t.Position.x < -EPISON)
+			return true;
+		if (abs(Position.x - t.Position.x) < EPISON) {
+			if (Position.y - t.Position.y < -EPISON)
+				return true;
+			if (abs(Position.y - t.Position.y) < EPISON) {
+				if (Position.z - t.Position.z < -EPISON)
+					return true;
+			}
+		}
+		return false;
+	}
+
+	bool operator==(const GraftalVertex & t) const {
+		return abs(Position.x - t.Position.x) < EPISON &&
+			abs(Position.y - t.Position.y) < EPISON &&
+			abs(Position.z - t.Position.z) < EPISON;
+	}
+
+	void combine(const GraftalVertex & t) {
+		Normal = (Normal + t.Normal) / 2.0f;
+		TexCoords = (TexCoords + t.TexCoords) / 2.0f;
+		furLength = (furLength + t.furLength) / 2.0f;
+		alpha = (alpha + t.alpha) / 2.0f;
+	}
+};
+
+class GraftalModel {
+public:
+	GraftalModel(const GLchar* path, float maxFurLength = 0) {
+		loadModel(path);
+		for (GraftalVertex & vertex : vertices) {
+			vertex.furLength = rand() * maxFurLength / RAND_MAX;
+			vertex.alpha = (float)rand() / RAND_MAX;
+		}
+		sort(vertices.begin(), vertices.end());
+		GraftalVertex t = vertices[0];
+		vector<GraftalVertex> temp;
+		for (GLuint i = 1; i < vertices.size(); ++i) {
+			if (vertices[i] == t)
+				t.combine(vertices[i]);
+			else {
+				temp.push_back(t);
+				t = vertices[i];
+			}
+		}
+		temp.push_back(t);
+		vertices = temp;
+		setupVAO();
+	}
+
+	void Draw(Shader shader) {
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_POINTS, 0, (GLsizei)vertices.size());
+		glBindVertexArray(0);
+	}
+
+private:
+	vector<GraftalVertex> vertices;
+	string directory;
+	GLuint VAO;
+	void setupVAO() {
+		GLuint VBO;
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glBindVertexArray(VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GraftalVertex), &vertices[0], GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GraftalVertex), (GLvoid*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GraftalVertex), (GLvoid*)offsetof(GraftalVertex, Normal));
+		glEnableVertexAttribArray(2);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GraftalVertex), (GLvoid*)offsetof(GraftalVertex, TexCoords));
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(GraftalVertex), (GLvoid*)offsetof(GraftalVertex, furLength));
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(GraftalVertex), (GLvoid*)offsetof(GraftalVertex, alpha));
+
+		glBindVertexArray(0);
+	}
+
+	void loadModel(string path) {
+		Assimp::Importer importer;
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+		if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+			cout << "ERROR::ASSIMP:: " << importer.GetErrorString() << endl;
+			return;
+		}
+		this->directory = path.substr(0, path.find_last_of('/'));
+		this->processNode(scene->mRootNode, scene);
+	}
+
+	void processNode(aiNode* node, const aiScene* scene) {
+		for (GLuint i = 0; i < node->mNumMeshes; i++) {
+			aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
+			this->processMesh(mesh, scene);
+		}
+		for (GLuint i = 0; i < node->mNumChildren; i++) {
+			this->processNode(node->mChildren[i], scene);
+		}
+	}
+
+	void processMesh(aiMesh* mesh, const aiScene* scene) {
+		for (GLuint i = 0; i < mesh->mNumVertices; i++) {
+			GraftalVertex vertex;
+			glm::vec3 vector;
+			vector.x = mesh->mVertices[i].x;
+			vector.y = mesh->mVertices[i].y;
+			vector.z = mesh->mVertices[i].z;
+			vertex.Position = vector;
+			vector.x = mesh->mNormals[i].x;
+			vector.y = mesh->mNormals[i].y;
+			vector.z = mesh->mNormals[i].z;
+			vertex.Normal = vector;
+			if (mesh->mTextureCoords[0]) {
+				glm::vec2 vec;
+				vec.x = mesh->mTextureCoords[0][i].x;
+				vec.y = mesh->mTextureCoords[0][i].y;
+				vertex.TexCoords = vec;
+			}
+			else
+				vertex.TexCoords = glm::vec2(0.0f, 0.0f);
+			vertices.push_back(vertex);
+		}
+	}
+};
