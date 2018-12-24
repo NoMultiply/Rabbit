@@ -48,7 +48,7 @@ const glm::vec3 pointLightPositions[] = {
 glm::vec3 gravity(0.0f, -FUR_HEIGHT, 0.0f);
 
 template<class T>
-void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel)
+void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel, glm::mat4 model)
 {
 	shader.Use();
 
@@ -69,8 +69,8 @@ void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel)
 	glUniform3f(glGetUniformLocation(shader.Program, "viewPos"), camera.Position.x, camera.Position.y, camera.Position.z);
 	// Point light 1
 	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
-	// glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].ambient"), 0.05f, 0.05f, 0.05f);
-	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].ambient"), 0.3f, 0.3f, 0.3f);
+	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].ambient"), 0.5f, 0.5f, 0.5f);
+	//glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].diffuse"), 1.0f, 1.0f, 1.0f);
 	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].diffuse"), 1.0f, 1.0f, 1.0f);
 	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[0].specular"), 1.0f, 1.0f, 1.0f);
 	glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].constant"), 1.0f);
@@ -80,8 +80,8 @@ void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel)
 	glUniform1f(glGetUniformLocation(shader.Program, "pointLights[0].quadratic"), 0.0032f);
 	// Point light 2
 	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].position"), pointLightPositions[1].x, pointLightPositions[1].y, pointLightPositions[1].z);
-	// glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.05f, 0.05f, 0.05f);
-	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.3f, 0.3f, 0.3f);
+	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.05f, 0.05f, 0.05f);
+	//glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].ambient"), 0.5f, 0.5f, 0.5f);
 	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].diffuse"), 1.0f, 1.0f, 1.0f);
 	glUniform3f(glGetUniformLocation(shader.Program, "pointLights[1].specular"), 1.0f, 1.0f, 1.0f);
 	glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].constant"), 1.0f);
@@ -90,8 +90,25 @@ void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel)
 	glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].linear"), 0.009f);
 	glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].quadratic"), 0.0032f);
 
-	glm::mat4 model(1.0f);
-	model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+	// spot light
+
+	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.position"), camera.Position.x, camera.Position.y, camera.Position.z);
+	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.direction"), camera.Front.x, camera.Front.y, camera.Front.z);
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.cutoff"), glm::cos(glm::radians(12.5f)));
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.outCutoff"), glm::cos(glm::radians(17.5f)));
+	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.ambient"), 0.5f, 0.5f, 0.5f);
+	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.diffuse"), 10.0f, 10.0f, 10.0f);
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.constant"), 1.0f);
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.linear"), 0.009f);
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.quadratic"), 0.0032f);
+
+
+	glUniform1f(glGetUniformLocation(shader.Program, "metallic"), 0.5f);
+	glUniform1f(glGetUniformLocation(shader.Program, "roughness"), 0.5f);
+	glUniform1f(glGetUniformLocation(shader.Program, "ao"), 1.0f);
+
+	// glm::mat4 model(1.0f);
+	// model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
 	// model = glm::scale(model, glm::vec3(0.005f));
 	// model = glm::scale(model, glm::vec3(10.0f));
 	glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
@@ -153,57 +170,57 @@ int main() {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		glm::mat4 model(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+
 		if (rabbitType == Bunny) {
 			shader.Use();
 			glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 0);
-			shader_draw(shader, currentFrame, bunny);
+			shader_draw(shader, currentFrame, bunny, model);
 		}
 		else if (rabbitType == FurBunny)
-			shader_draw(furShader, currentFrame, furBunny);
+			shader_draw(furShader, currentFrame, furBunny, model);
 		else if (rabbitType == VertexBunny) {
 			shader.Use();
 			glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 0);
-			shader_draw(shader, currentFrame, bunny);
-			shader_draw(vertexFurShader, currentFrame, bunny);
+			shader_draw(shader, currentFrame, bunny, model);
+			shader_draw(vertexFurShader, currentFrame, bunny, model);
 		}
 		else if (rabbitType == GraftalBunny) {
 			// shader.Use();
 			// glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 0);
 			// shader_draw(shader, currentFrame, bunny);
-			shader_draw(graftalsShader, currentFrame, bunny);
+			shader_draw(graftalsShader, currentFrame, bunny, model);
 		}
 		else if (rabbitType == ArtBunny) {
 			float oldY = gravity.y;
 			gravity.y = 0.0f;
 			shader.Use();
 			glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 1);
-			shader_draw(shader, currentFrame, bunny);
+			shader_draw(shader, currentFrame, bunny, model);
 
 			artShader.Use();
 			glUniform1i(glGetUniformLocation(artShader.Program, "lodLevel"), 1);
 			artOutlineShader.Use();
 			glUniform1i(glGetUniformLocation(artOutlineShader.Program, "lodLevel"), 1);
-			shader_draw(artShader, currentFrame, graftalsBunny);
-			shader_draw(artOutlineShader, currentFrame, graftalsBunny);
+			shader_draw(artShader, currentFrame, graftalsBunny, model);
+			shader_draw(artOutlineShader, currentFrame, graftalsBunny, model);
 
 			artShader.Use();
 			glUniform1i(glGetUniformLocation(artShader.Program, "lodLevel"), 2);
 			artOutlineShader.Use();
 			glUniform1i(glGetUniformLocation(artOutlineShader.Program, "lodLevel"), 2);
-			shader_draw(artShader, currentFrame, graftalsBunny);
-			shader_draw(artOutlineShader, currentFrame, graftalsBunny);
+			shader_draw(artShader, currentFrame, graftalsBunny, model);
+			shader_draw(artOutlineShader, currentFrame, graftalsBunny, model);
 
 			gravity.y = oldY;
 		}
 
-		// glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-		// glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		// for (GLuint i = 0; i < 2; i++) {
 		// 	model = glm::mat4(1.0f);
 		// 	model = glm::translate(model, pointLightPositions[i]);
 		// 	model = glm::scale(model, glm::vec3(0.001f));
-		// 	glUniformMatrix4fv(glGetUniformLocation(shader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-		// 	lightBulb.Draw(shader);
+		// 	shader_draw(shader, currentFrame, lightBulb, model);
 		// }
 
 		glfwSwapBuffers(window);
