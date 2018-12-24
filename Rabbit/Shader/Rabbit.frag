@@ -31,6 +31,7 @@ out vec4 color;
 uniform vec3 viewPos;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform Material material;
+uniform int artDraw;
 
 // Function prototypes
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -44,9 +45,10 @@ void main()
     for(int i = 0; i < NR_POINT_LIGHTS; i++)
         result += CalcPointLight(pointLights[i], norm, fragPosition, viewDir);
         
-    // color = vec4(result, 1.0f);
-	color = vec4(1.0f, 0.47f, 0.0f, 1.0f);
-    // color = vec4(1.0f);
+	if (artDraw == 1)
+		color = vec4(1.0f, 0.47f, 0.0f, 1.0f);
+	else
+		color = vec4(result, 1.0f);
 }
 
 

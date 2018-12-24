@@ -31,6 +31,11 @@ public:
 		this->loadModel(path);
 	}
 
+	Model(const Model & model, bool _hasFur, int _layers, float _maxFurLength) {
+		for (const auto & mesh : model.meshes)
+			meshes.push_back(Mesh(mesh.vertices, mesh.indices, mesh.textures, _hasFur, _layers, _maxFurLength));
+	}
+
 	virtual void Draw(Shader shader) {
 		for (GLuint i = 0; i < this->meshes.size(); i++)
 			this->meshes[i].Draw(shader);
@@ -43,6 +48,7 @@ public:
 	}
 
 protected:
+	friend class GraftalModel;
 	vector<Mesh> meshes;
 	string directory;
 	vector<Texture> textures_loaded;
@@ -171,6 +177,14 @@ struct GraftalVertex {
 	GLfloat furLength;
 	GLfloat alpha;
 
+	GraftalVertex() {}
+
+	GraftalVertex(const Vertex & t) {
+		Position = t.Position;
+		Normal = t.Normal;
+		TexCoords = t.TexCoords;
+	}
+
 	bool operator<(const GraftalVertex & t) const {
 		if (Position.x - t.Position.x < -EPISON)
 			return true;
@@ -201,6 +215,30 @@ struct GraftalVertex {
 
 class GraftalModel {
 public:
+	GraftalModel(Model & model, float maxFurLength = 0) {
+		vector<GraftalVertex> temp;
+		for (const auto & mesh : model.meshes) {
+			for (const auto & vertex : mesh.vertices) {
+				GraftalVertex t(vertex);
+				t.furLength = rand() * maxFurLength / RAND_MAX;
+				t.alpha = (float)rand() / RAND_MAX;
+				temp.push_back(t);
+			}
+		}
+		sort(temp.begin(), temp.end());
+		GraftalVertex t = temp[0];
+		for (GLuint i = 1; i < temp.size(); ++i) {
+			if (temp[i] == t)
+				t.combine(temp[i]);
+			else {
+				vertices.push_back(t);
+				t = temp[i];
+			}
+		}
+		temp.push_back(t);
+		setupVAO();
+	}
+
 	GraftalModel(const GLchar* path, float maxFurLength = 0) {
 		loadModel(path);
 		for (GraftalVertex & vertex : vertices) {

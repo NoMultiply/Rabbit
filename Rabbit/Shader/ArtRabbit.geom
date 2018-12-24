@@ -71,10 +71,10 @@ void main() {
 		for (int i = 0; i < LAYERS; ++i) {
 			float layer = i;
 			layer /= (LAYERS - 1);
-			emitV1WithBias(width + layer * height - pow(layer, 2) * 2 * width);
+			emitV1WithBias(width + layer * height - pow(layer, 2) * 2 * width + pow(layer, 3.0) * displacement);
 			if (i == LAYERS - 1)
 				break;
-			emitV1WithBias(layer * height - pow(layer, 2) * width);
+			emitV1WithBias(layer * height - pow(layer, 2) * width + pow(layer, 3.0) * displacement);
 		}
 		for (int i = 0; i < 2 * LAYERS - 3; ++i) {
 			if (i % 2 == 1) {

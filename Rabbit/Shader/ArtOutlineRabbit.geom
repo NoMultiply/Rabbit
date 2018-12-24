@@ -75,13 +75,13 @@ void main() {
 		for (int i = 0; i < LAYERS; ++i) {
 			float layer = i;
 			layer /= (LAYERS - 1);
-			vec3 bias = width + layer * height - pow(layer, 2) * 2 * width;
+			vec3 bias = width + layer * height - pow(layer, 2) * 2 * width + pow(layer, 3.0) * displacement;
 			emitV1WithBias(bias);
 		}
 		for (int i = LAYERS - 2; i >= 0; --i) {
 			float layer = i;
 			layer /= (LAYERS - 1);
-			vec3 bias = layer * height - pow(layer, 2) * width;
+			vec3 bias = layer * height - pow(layer, 2) * width  + pow(layer, 3.0) * displacement;
 			emitV1WithBias(bias);
 		}
 		EndPrimitive();

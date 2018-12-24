@@ -31,31 +31,33 @@ GLuint FurTexture::fur_textureId = 0;
 GLuint FurTexture::fin_textureId = 0;
 const int FUR_DIM = 512;
 const float FUR_DENSITY = 0.8f;
-const int FUR_LAYERS = 30;
-// const float FUR_HEIGHT = 0.5f;
-const float FUR_HEIGHT = 0.09f;
+const int FUR_LAYERS = 20;
+const float FUR_HEIGHT = 0.03f;
 
-// FUR_BUNNY FUR_ROOM VERTEX_BUNNY ART_BUNNY BUNNY GRAFTALS_BUNNY
-#define ART_BUNNY
+enum RabbitType {
+	Bunny, FurBunny, VertexBunny, GraftalBunny, ArtBunny, Dump
+} rabbitType;
 
+bool animation = true;
 
 const glm::vec3 pointLightPositions[] = {
 	glm::vec3(2.3f, -1.6f, -3.0f),
 	glm::vec3(-1.7f, 0.9f, 1.0f)
 };
 
-const glm::vec3 gravity(0.0f, -FUR_HEIGHT, 0.0f);
-// const glm::vec3 gravity(0.0f, 0.0f, 0.0f);
+glm::vec3 gravity(0.0f, -FUR_HEIGHT, 0.0f);
 
 template<class T>
 void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel)
 {
 	shader.Use();
 
-	// glm::vec3 force(sin(glm::radians(currentFrame * 50.0f)) * 50.0f, 0.0f, 0.0f);
 	glm::vec3 force(sin(glm::radians(currentFrame * 50.0f)) * FUR_HEIGHT, 0.0f, 0.0f);
-	// glm::vec3 disp = gravity + force;
-	glm::vec3 disp = gravity + force;
+	glm::vec3 disp;
+	if (animation)
+		disp = gravity + force;
+	else
+		disp = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 	glm::mat4 view = camera.GetViewMatrix();
@@ -120,44 +122,23 @@ int main() {
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	// glEnable(GL_ARB_arrays_of_arrays);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	rabbitType = GraftalBunny;
+
 	FurTexture fur(FUR_DIM, FUR_DIM, FUR_LAYERS, FUR_DENSITY);
 
-	
-
-#ifdef FUR_BUNNY
-	Model furBunny("Object/bunny/bunny.obj", true, FUR_LAYERS, FUR_HEIGHT);
-	Shader furShader("Shader/FurRabbit.vert", "Shader/FurRabbit.frag");
-#else 
-#ifdef FUR_ROOM
-	Shader furShader("Shader/FurRabbit.vert", "Shader/FurRabbit.frag");
-	Model ourModel("Object/room/room.obj", true, FUR_LAYERS, FUR_HEIGHT, false);
-#else
 	Model bunny("Object/bunny/bunny.obj");
+	GraftalModel graftalsBunny(bunny, FUR_HEIGHT);
+	Model furBunny(bunny, true, FUR_LAYERS, FUR_HEIGHT);
+
 	Shader shader("Shader/Rabbit.vert", "Shader/Rabbit.frag");
-	GraftalModel graftalsBunny = GraftalModel("Object/bunny/bunny.obj", FUR_HEIGHT);
-#ifdef GRAFTALS_BUNNY
-	// GraftalModel graftalsBunny = GraftalModel("Object/room/room.obj", FUR_HEIGHT);
-	Shader graftalsShader("Shader/GraftalsRabbit.vert", "Shader/GraftalsRabbit.frag", "Shader/GraftalsRabbit.geom");
-#else
-	// Model bunny("Object/room/room.obj");
-	// bunny.SetFurTexture(true);
-#ifdef VERTEX_BUNNY
-	// bunny.SetFurTexture(true);
+	Shader furShader("Shader/FurRabbit.vert", "Shader/FurRabbit.frag");
 	Shader vertexFurShader("Shader/VertexFurRabbit.vert", "Shader/VertexFurRabbit.frag", "Shader/VertexFurRabbit.geom");
-#else
-#ifdef ART_BUNNY
+	Shader graftalsShader("Shader/GraftalsRabbit.vert", "Shader/GraftalsRabbit.frag", "Shader/GraftalsRabbit.geom");
 	Shader artOutlineShader("Shader/ArtOutlineRabbit.vert", "Shader/ArtOutlineRabbit.frag", "Shader/ArtOutlineRabbit.geom");
 	Shader artShader("Shader/ArtRabbit.vert", "Shader/ArtRabbit.frag", "Shader/ArtRabbit.geom");
-#else
-#endif
-#endif
-#endif
-#endif
-#endif
 
 	// Model lightBulb("Object/lamp/file.obj");
 
@@ -172,46 +153,49 @@ int main() {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// shader_draw(shader, currentFrame, bunny);
-		// shader_draw(vertexFurShader, currentFrame, bunny);
-#ifdef FUR_BUNNY
-		shader_draw(furShader, currentFrame, furBunny);
-#else
-#ifdef FUR_ROOM
-		shader_draw(furShader, currentFrame, ourModel);
-#else
-		shader_draw(shader, currentFrame, bunny);
-#ifdef GRAFTALS_BUNNY
-		graftalsShader.Use();
-		glUniform1i(glGetUniformLocation(graftalsShader.Program, "lodLevel"), 1);
-		shader_draw(graftalsShader, currentFrame, graftalsBunny);
-		glUniform1i(glGetUniformLocation(graftalsShader.Program, "lodLevel"), 2);
-		shader_draw(graftalsShader, currentFrame, graftalsBunny);
-#else
-#ifdef VERTEX_BUNNY
-		shader_draw(vertexFurShader, currentFrame, bunny);
-#else
-#ifdef ART_BUNNY
-		artShader.Use();
-		glUniform1i(glGetUniformLocation(artShader.Program, "lodLevel"), 1);
-		artOutlineShader.Use();
-		glUniform1i(glGetUniformLocation(artOutlineShader.Program, "lodLevel"), 1);
-		shader_draw(artShader, currentFrame, graftalsBunny);
-		shader_draw(artOutlineShader, currentFrame, graftalsBunny);
+		if (rabbitType == Bunny) {
+			shader.Use();
+			glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 0);
+			shader_draw(shader, currentFrame, bunny);
+		}
+		else if (rabbitType == FurBunny)
+			shader_draw(furShader, currentFrame, furBunny);
+		else if (rabbitType == VertexBunny) {
+			shader.Use();
+			glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 0);
+			shader_draw(shader, currentFrame, bunny);
+			shader_draw(vertexFurShader, currentFrame, bunny);
+		}
+		else if (rabbitType == GraftalBunny) {
+			// shader.Use();
+			// glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 0);
+			// shader_draw(shader, currentFrame, bunny);
+			shader_draw(graftalsShader, currentFrame, bunny);
+		}
+		else if (rabbitType == ArtBunny) {
+			float oldY = gravity.y;
+			gravity.y = 0.0f;
+			shader.Use();
+			glUniform1i(glGetUniformLocation(shader.Program, "artDraw"), 1);
+			shader_draw(shader, currentFrame, bunny);
 
-		artShader.Use();
-		glUniform1i(glGetUniformLocation(artShader.Program, "lodLevel"), 2);
-		artOutlineShader.Use();
-		glUniform1i(glGetUniformLocation(artOutlineShader.Program, "lodLevel"), 2);
-		shader_draw(artShader, currentFrame, graftalsBunny);
-		shader_draw(artOutlineShader, currentFrame, graftalsBunny);
-#else
-#endif
-#endif
-#endif
-#endif
-#endif
-	
+			artShader.Use();
+			glUniform1i(glGetUniformLocation(artShader.Program, "lodLevel"), 1);
+			artOutlineShader.Use();
+			glUniform1i(glGetUniformLocation(artOutlineShader.Program, "lodLevel"), 1);
+			shader_draw(artShader, currentFrame, graftalsBunny);
+			shader_draw(artOutlineShader, currentFrame, graftalsBunny);
+
+			artShader.Use();
+			glUniform1i(glGetUniformLocation(artShader.Program, "lodLevel"), 2);
+			artOutlineShader.Use();
+			glUniform1i(glGetUniformLocation(artOutlineShader.Program, "lodLevel"), 2);
+			shader_draw(artShader, currentFrame, graftalsBunny);
+			shader_draw(artOutlineShader, currentFrame, graftalsBunny);
+
+			gravity.y = oldY;
+		}
+
 		// glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		// glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		// for (GLuint i = 0; i < 2; i++) {
@@ -244,6 +228,13 @@ void Do_Movement() {
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (action == GLFW_RELEASE && key == GLFW_KEY_M) {
+		rabbitType = RabbitType((int)rabbitType + 1);
+		if (rabbitType == Dump)
+			rabbitType = Bunny;
+	}
+	if (action == GLFW_RELEASE && key == GLFW_KEY_N)
+		animation = !animation;
 	if (key >= 0 && key < 1024) {
 		if (action == GLFW_PRESS)
 			keys[key] = true;

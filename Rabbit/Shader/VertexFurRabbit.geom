@@ -9,6 +9,7 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 displacement;
+uniform vec3 viewPos;
 uniform float furLength;
 
 in vec3 gNormal[];
@@ -19,16 +20,14 @@ out vec3 fFragPosition;
 out vec2 fTexCoords;
 out float fFragLayer;
 
-vec3 GetNormal() {
-   vec3 a = vec3(gl_in[0].gl_Position) - vec3(gl_in[1].gl_Position);
-   vec3 b = vec3(gl_in[2].gl_Position) - vec3(gl_in[1].gl_Position);
-   return normalize(cross(a, b));
-}
-
 void main() {
 	for (int j = 0; j < 3; ++j) {
-		// fNormal = mat3(transpose(inverse(model))) * gNormal[j];
-		fNormal = gNormal[j];
+		vec3 eyeVec = normalize(viewPos - vec3(model * vec4(gl_in[j].gl_Position)));
+		float p = dot(gNormal[j], eyeVec);
+		if (p < -0.1)
+			continue;
+		fNormal = mat3(transpose(inverse(model))) * gNormal[j];
+		// fNormal = gNormal[j];
 		fTexCoords = gTexCoords[j];
 		for (int i = 0; i < FUR_LAYERS; ++i) {
 			float layer = i;

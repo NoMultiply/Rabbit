@@ -1,22 +1,18 @@
 #version 330 core
 
-#define LAYERS 10
-// LAYERS * 2 - 1
-
-layout (points) in;
-layout (line_strip, max_vertices = 19) out;
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 9) out;
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 displacement;
 uniform vec3 viewPos;
-uniform int lodLevel;
+uniform float furLength;
 
 in vec3 gPosition[];
 in vec3 gNormal[];
 in vec2 gTexCoords[];
-in float gFurLength[];
 
 out vec3 fNormal;
 out vec3 fFragPosition;
@@ -39,37 +35,45 @@ void emit(Vertex vertex) {
 	EmitVertex();
 }
 
-#define emitV1WithBias(l) {\
-	v1.position = vec4(gPosition[0] + (l), 1.0f);\
-	v1.gPos = projection * view * model * v1.position;\
-	v1.fragPosition = vec3(model * v1.position);\
-	emit(v1);\
+#define setupVertex(v, idx) {\
+	v.normal = gNormal[idx];\
+	v.normal_ = mat3(transpose(inverse(model))) * v.normal;\
+	v.position = vec4(gPosition[idx], 1.0f);\
+	v.gPos = projection * view * model * v.position;\
+	v.fragPosition = vec3(model * v.position);\
+	v.texCoords = gTexCoords[idx];\
 }
 
 void main() {
-	vec3 eyeVec = normalize(viewPos - vec3(model * vec4(gPosition[0], 1.0f)));
-	float p = dot(gNormal[0], eyeVec);
-	if ((lodLevel == 1 && -0.1f < p && p < 0.2f) || (lodLevel == 2 && 0.4f < p && p < 0.6f)) {
-		vec3 dir = normalize(cross(eyeVec, gNormal[0]));
-		Vertex v1;
-		v1.normal = gNormal[0];
-		v1.normal_ = mat3(transpose(inverse(model))) * v1.normal;
-		v1.texCoords = gTexCoords[0];
+	Vertex v1, v2, v3, v0;
+	setupVertex(v1, 0);
+	setupVertex(v2, 1);
+	setupVertex(v3, 2);
 
-		vec3 width = -dir * gFurLength[0] / 2;
-		vec3 height = v1.normal * gFurLength[0];
-		for (int i = 0; i < LAYERS; ++i) {
-			float layer = i;
-			layer /= (LAYERS - 1);
-			vec3 bias = width + layer * height - pow(layer, 2) * 2 * width;
-			emitV1WithBias(bias);
-		}
-		for (int i = LAYERS - 2; i >= 0; --i) {
-			float layer = i;
-			layer /= (LAYERS - 1);
-			vec3 bias = layer * height - pow(layer, 2) * width;
-			emitV1WithBias(bias);
-		}
-		EndPrimitive();
-	}
+	v0.normal = (v1.normal + v2.normal + v3.normal) / 3.0f;
+	v0.normal_ = mat3(transpose(inverse(model))) * v0.normal;
+	v0.position = vec4((gPosition[0] + gPosition[1] + gPosition[2]) / 3.0f + furLength * v0.normal + displacement, 1.0f);
+	v0.gPos = projection * view * model * v0.position;
+	v0.fragPosition = vec3(model * v0.position);
+	v0.texCoords = (gTexCoords[0] + gTexCoords[1] + gTexCoords[2]) / 3.0f;
+
+	vec3 eyeVec = normalize(viewPos - vec3(model * v0.position));
+	float p = dot(v0.normal, eyeVec);
+	if (p < -0.1)
+		return;
+
+	emit(v1);
+	emit(v2);
+	emit(v0);
+	EndPrimitive();
+
+	emit(v2);
+	emit(v3);
+	emit(v0);
+	EndPrimitive();
+
+	emit(v3);
+	emit(v1);
+	emit(v0);
+	EndPrimitive();
 }
