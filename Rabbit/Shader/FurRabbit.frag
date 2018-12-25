@@ -50,6 +50,7 @@ uniform vec3 viewPos;
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform Material material;
+uniform bool useSpotLight;
 
 // Function prototypes
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -128,7 +129,8 @@ void main()
 	kD *= 1.0 - metallic;
 
 	float NdotL = max(dot(norm, lightDir), 0.0);
-	Lo += (kD * albedo / PI + specular) * radiance * NdotL * intensity;
+	if (useSpotLight)
+		Lo += (kD * albedo / PI + specular) * radiance * NdotL * intensity;
 
 	vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 result = ambient + Lo;

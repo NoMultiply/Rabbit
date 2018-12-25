@@ -39,6 +39,7 @@ enum RabbitType {
 } rabbitType;
 
 bool animation = true;
+bool useSpotLight = false;
 
 const glm::vec3 pointLightPositions[] = {
 	glm::vec3(2.3f, -1.6f, -3.0f),
@@ -91,13 +92,13 @@ void shader_draw(Shader shader, GLfloat & currentFrame, T & ourModel, glm::mat4 
 	glUniform1f(glGetUniformLocation(shader.Program, "pointLights[1].quadratic"), 0.0032f);
 
 	// spot light
-
+	glUniform1i(glGetUniformLocation(shader.Program, "useSpotLight"), useSpotLight);
 	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.position"), camera.Position.x, camera.Position.y, camera.Position.z);
 	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.direction"), camera.Front.x, camera.Front.y, camera.Front.z);
-	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.cutoff"), glm::cos(glm::radians(12.5f)));
-	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.outCutoff"), glm::cos(glm::radians(17.5f)));
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.cutoff"), glm::cos(glm::radians(0.5f)));
+	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.outCutoff"), glm::cos(glm::radians(1.5f)));
 	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.ambient"), 0.5f, 0.5f, 0.5f);
-	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.diffuse"), 10.0f, 10.0f, 10.0f);
+	glUniform3f(glGetUniformLocation(shader.Program, "spotLight.diffuse"), 0.0f, 10.0f, 100.0f);
 	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.constant"), 1.0f);
 	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.linear"), 0.009f);
 	glUniform1f(glGetUniformLocation(shader.Program, "spotLight.quadratic"), 0.0032f);
@@ -249,6 +250,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		rabbitType = RabbitType((int)rabbitType + 1);
 		if (rabbitType == Dump)
 			rabbitType = Bunny;
+	}
+	if (action == GLFW_RELEASE && key == GLFW_KEY_L) {
+		useSpotLight = !useSpotLight;
 	}
 	if (action == GLFW_RELEASE && key == GLFW_KEY_N)
 		animation = !animation;
