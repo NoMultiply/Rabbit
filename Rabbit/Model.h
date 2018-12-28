@@ -23,17 +23,20 @@ class Model
 {
 public:
 	Model(const GLchar* path, bool _hasFur = false, int _layers = 0,
-		float _maxFurLength = 0, bool _hasFin = false) {
+		float _maxFurLength = 0, bool _hasFin = false, bool _slice = false) {
 		this->hasFur = _hasFur;
 		this->hasFin = _hasFin;
 		this->layers = _layers;
 		this->maxFurLength = _maxFurLength;
 		this->loadModel(path);
+		this->slice = _slice;
 	}
 
-	Model(const Model & model, bool _hasFur, int _layers, float _maxFurLength) {
-		for (const auto & mesh : model.meshes)
-			meshes.push_back(Mesh(mesh.vertices, mesh.indices, mesh.textures, _hasFur, _layers, _maxFurLength));
+	Model(const Model & model, bool _hasFur, int _layers, float _maxFurLength, bool _slice = false) {
+		this->slice = _slice;
+		for (const auto & mesh : model.meshes) {
+			meshes.push_back(Mesh(mesh.vertices, mesh.indices, mesh.textures, _hasFur, _layers, _maxFurLength, false, _slice));
+		}
 	}
 
 	virtual void Draw(Shader shader) {
@@ -56,7 +59,7 @@ protected:
 	bool hasFin;
 	int layers;
 	float maxFurLength;
-
+	bool slice;
 	void loadModel(string path) {
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -118,7 +121,7 @@ protected:
 			textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
 		}
 
-		return Mesh(vertices, indices, textures, hasFur, layers, maxFurLength, hasFin);
+		return Mesh(vertices, indices, textures, hasFur, layers, maxFurLength, hasFin, slice);
 	}
 
 	vector<Texture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, string typeName) {

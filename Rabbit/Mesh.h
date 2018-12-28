@@ -100,12 +100,13 @@ public:
 	vector<Texture> textures;
 
 	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures,
-		bool _hasFur = false, int _layers = 0, float _maxFurLength = 0, bool _hasFin = false) {
+		bool _hasFur = false, int _layers = 0, float _maxFurLength = 0, bool _hasFin = false, bool _slice = false) {
 		this->hasFur = _hasFur;
 		this->hasFin = _hasFin;
 		this->layers = _layers;
 		this->maxFurLength = _maxFurLength;
 		this->textures = textures;
+		this->slice = _slice;
 		if (!hasFur) {
 			this->vertices = vertices;
 			this->indices = indices;
@@ -123,11 +124,12 @@ public:
 				// float layer = (float)i / total;
 				float layer = (float)pow(i, 0.2) / total;
 				float layerFurLength = maxFurLength * layer;
-
 				for (auto v : vertices) {
-					v.Position = v.Position + v.Normal * layerFurLength;
-					v.Layer = layer;
-					this->vertices.push_back(v);
+					if (!slice || v.Normal.y != 0) {
+						v.Position = v.Position + v.Normal * layerFurLength;
+						v.Layer = layer;
+						this->vertices.push_back(v);
+					}
 				}
 			}
 
@@ -230,6 +232,7 @@ private:
 	int layers;
 	float maxFurLength;
 	bool hasFin;
+	bool slice;
 
 	void setupMesh() {
 		glGenVertexArrays(1, &this->VAO);
