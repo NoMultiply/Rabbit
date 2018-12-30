@@ -53,7 +53,7 @@ glm::vec3 gravity(0.0f, -FUR_HEIGHT, 0.0f);
 glm::vec3 rabbitPostion(2.0f, 0.0f, 2.0f);
 
 template<class T>
-void shader_draw(Shader shader, GLfloat furHeight, glm::vec3 disp,  T & ourModel, glm::mat4 model)
+void shader_draw(Shader shader, GLfloat furHeight, glm::vec3 disp, T & ourModel, glm::mat4 model)
 {
 	shader.Use();
 
@@ -113,6 +113,7 @@ void shader_draw(Shader shader, GLfloat furHeight, glm::vec3 disp,  T & ourModel
 	ourModel.Draw(shader);
 }
 
+
 int main() {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -168,7 +169,7 @@ int main() {
 	faces.push_back("images/bottom.jpg");
 	faces.push_back("images/back.jpg");
 	faces.push_back("images/front.jpg");
-	skybox.loadCubemap(faces);
+	skybox.loadCubemap(faces); 
 	skybox.Bind();
 
 	// Model lightBulb("Object/lamp/file.obj");
@@ -188,11 +189,14 @@ int main() {
 		glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+		skyboxShader.Use();
+		glm::mat4 view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
 		glm::mat4 projection = glm::perspective(camera.Zoom, (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
-		glm::mat4 view = camera.GetViewMatrix();
 		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 		glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 		skybox.Draw(skyboxShader);
+		
 
 		glm::mat4 model(1.0f);
 		model = glm::translate(model, rabbitPostion);
@@ -217,7 +221,7 @@ int main() {
 		else if (rabbitType == FurBunny) {
 			furShader.Use();
 			shader_draw(furShader, FUR_HEIGHT, disp, furBunny, model);
-			
+
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, glm::vec3(0.1f, 0.35f, 0.1f));
 			model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
